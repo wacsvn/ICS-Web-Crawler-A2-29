@@ -37,6 +37,20 @@ def is_valid(url):
         # i.e. ignore fragment URLs if that page itself has already been scraped
         # TODO this implementation doesn't account for paths that begin with / and branch into different URLS with
         #  different #'s or none at all
+
+        # Check if the URL has a fragment identifier
+        if "#" in parsed.fragment:
+            # Extract the URL without the fragment identifier
+            url_without_fragment = parsed.geturl()[:parsed.geturl().rfind("#")]
+
+            # Check if the URL without the fragment has been visited
+            # url.frontier.to_be_downloaded is a list in frontier.py that stores all visited urls
+            if url_without_fragment in url.frontier.to_be_downloaded:
+                return False
+            else:
+                # Mark the URL without the fragment as visited
+                url.frontier.to_be_downloaded.add(url_without_fragment)
+
         if not parsed.path.startswith("/"):
             return False
 
