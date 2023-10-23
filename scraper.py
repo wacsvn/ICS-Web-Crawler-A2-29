@@ -26,17 +26,20 @@ def is_valid(url):
     try:
         parsed = urlparse(url)
         if parsed.scheme not in set(["http", "https"]):
+            print("failed at scheme")
             return False
 
         # Check if the domain is within the allowed domains
-        allowed_domains = ["ics.uci.edu", "cs.uci.edu", "informatics.uci.edu", "stat.uci.edu", "today.uci.edu"]
+        allowed_domains = ["www.ics.uci.edu", "www.cs.uci.edu", "www.informatics.uci.edu", "www.stat.uci.edu", "www.today.uci.edu"]
         if parsed.netloc not in allowed_domains:
+            print("failed at domain")
             return False
+
 
         # Check if the path (the section after the .domaintype) starts with a forward slash
         # i.e. ignore fragment URLs if that page itself has already been scraped
-        # TODO this implementation doesn't account for paths that begin with / and branch into different URLS with
-        #  different #'s or none at all
+        # TODO identify traps such as calendar
+        # todo is_valid is only url checks ONLY according to jason
 
         # Check if the URL has a fragment identifier
         if "#" in parsed.fragment:
@@ -47,11 +50,18 @@ def is_valid(url):
             # url.frontier.to_be_downloaded is a list in frontier.py that stores all visited urls
             if url_without_fragment in url.frontier.to_be_downloaded:
                 return False
+                print("failed at fragment")
             else:
                 # Mark the URL without the fragment as visited
                 url.frontier.to_be_downloaded.add(url_without_fragment)
 
-        if not parsed.path.startswith("/"):
+        #if not parsed.path.startswith("/"):
+        #    return False
+
+        # TRAP CHECKING
+        # Check for markers that suggest it's a calendar object
+        if "/calendar" in parsed.path:
+            print("failed at cal")
             return False
 
         # Check for invalid file extensions
@@ -68,3 +78,13 @@ def is_valid(url):
     except TypeError:
         print ("TypeError for ", parsed)
         raise
+
+    return true
+
+
+# Usage example:
+url = "http://www.ics.uci.edu/calendar/"
+if is_valid(url):
+    print("This URL is valid.")
+else:
+    print("This URL is not valid.")
