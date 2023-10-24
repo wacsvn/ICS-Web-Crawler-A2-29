@@ -28,7 +28,9 @@ def extract_next_links(url, resp):
     '''
 
     hyperlinks = []
-    if resp is not None:
+
+    # checks if the response status code is 200 and the content of the page is not empty
+    if resp is not None and resp.raw_response.content:
         if resp.status == 200:
             try:
                 soupObj = BeautifulSoup(resp.raw_response.content,
