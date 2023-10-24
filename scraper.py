@@ -1,10 +1,13 @@
 import re
 import lxml
 from urllib.parse import urlparse
+from bs4 import BeautifulSoup
 
 def scraper(url, resp):
     links = extract_next_links(url, resp)
     return [link for link in links if is_valid(link)]
+
+
 
 def extract_next_links(url, resp):
     # Implementation required.
@@ -16,7 +19,22 @@ def extract_next_links(url, resp):
     #         resp.raw_response.url: the url, again
     #         resp.raw_response.content: the content of the page!
     # Return a list with the hyperlinks (as strings) scrapped from resp.raw_response.content
-    return list()
+    print("Entered Extract next links")
+    '''
+    Citations: https://pythonprogramminglanguage.com/get-links-from-webpage/
+    '''
+    hyperlinks = []
+    soupObj = BeautifulSoup(resp.raw_response.content,
+                            'lxml')  # using beautiful soup with lxml parser for better performance
+    potentialHyperLinks = soupObj.find_all(
+        'a')  # 'a' tag doesn't neccesarily mean hyperlink is present. must check for 'a tag with href attribute'
+
+    # wordsInWebPage = []
+    for data in potentialHyperLinks:
+        hyperlinks.append(data.get(
+            "href"))  # Citation Above. Noticed finding all a-tags doesn't provide just hyperlinks, so learned and implemented going line by line to check for href attributes
+
+    return list(hyperlinks)
 
 def is_valid(url):
     # Decide whether to crawl this url or not. 
