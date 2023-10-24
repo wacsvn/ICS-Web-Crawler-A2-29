@@ -30,7 +30,7 @@ def is_valid(url):
             return False
 
         # Check if the domain is within the allowed domains
-        allowed_domains = ["www.ics.uci.edu", "www.cs.uci.edu", "www.informatics.uci.edu", "www.stat.uci.edu", "www.today.uci.edu"]
+        allowed_domains = ["www.ics.uci.edu", "www.cs.uci.edu", "www.informatics.uci.edu", "www.stat.uci.edu"]
         if parsed.netloc not in allowed_domains:
             print("failed at domain")
             return False
