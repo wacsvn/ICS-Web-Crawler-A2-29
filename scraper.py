@@ -1,4 +1,6 @@
 import re
+from collections import defaultdict
+
 import lxml
 from urllib.parse import urlparse
 from bs4 import BeautifulSoup
@@ -28,20 +30,26 @@ def extract_next_links(url, resp):
     '''
 
     hyperlinks = []
+    unwantedTags = ["img", "nav"]
 
     # checks if the response status code is 200 and the content of the page is not empty
     if resp is not None and resp.raw_response.content:
         if resp.status == 200:
             try:
-                soupObj = BeautifulSoup(resp.raw_response.content,
-                                        'lxml')  # using beautiful soup with lxml parser for better performance
-                potentialHyperLinks = soupObj.find_all(
-                    'a')  # 'a' tag doesn't neccesarily mean hyperlink is present. must check for 'a tag with href attribute'
 
-                # wordsInWebPage = []
+                soupObj = BeautifulSoup(resp.raw_response.content,'lxml')  # using beautiful soup with lxml parser for better performance
+
+                #scraping hyperlinks in webpage
+                potentialHyperLinks = soupObj.find_all('a')  # 'a' tag doesn't neccesarily mean hyperlink is present. must check for 'a tag with href attribute'
                 for data in potentialHyperLinks:
-                    hyperlinks.append(data.get(
-                        "href"))  # Citation Above. Noticed finding all a-tags doesn't provide just hyperlinks, so learned and implemented going line by line to check for href attributes
+                    hyperlinks.append(data.get("href"))  # Citation Above. Noticed finding all a-tags doesn't provide just hyperlinks, so learned and implemented going line by line to check for href attributes
+
+                #scraping all text in webpage for computation of number of words, common words, etc.
+                webPageTags = soupObj.find_all()
+                for tags in webPageTags:
+                    
+
+
                 return list(hyperlinks)
             except AttributeError as e:
                 print(e)
@@ -116,6 +124,22 @@ def is_valid(url):
         raise
 
     return true
+
+
+
+def tokenizer(text):
+    tokens = re.findall(r'[a-zA-Z0-9]+', text.lower())
+    return tokens
+
+def countWordsOnPage():
+    pass
+
+def computeWordFrequencies(tokensList):
+    token_count = defaultdict(int)
+    for token in tokensList:
+        token_count[token] += 1
+
+
 
 
 # Testing:
