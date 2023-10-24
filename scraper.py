@@ -4,9 +4,11 @@ from urllib.parse import urlparse
 from bs4 import BeautifulSoup
 
 def scraper(url, resp):
-    links = extract_next_links(url, resp)
-    return [link for link in links if is_valid(link)]
-
+    try:
+        links = extract_next_links(url, resp)
+        return [link for link in links if is_valid(link)]
+    except AttributeError as e:
+        print(e)
 
 
 def extract_next_links(url, resp):
@@ -19,22 +21,31 @@ def extract_next_links(url, resp):
     #         resp.raw_response.url: the url, again
     #         resp.raw_response.content: the content of the page!
     # Return a list with the hyperlinks (as strings) scrapped from resp.raw_response.content
-    print("Entered Extract next links")
+
+
     '''
     Citations: https://pythonprogramminglanguage.com/get-links-from-webpage/
     '''
+
     hyperlinks = []
-    soupObj = BeautifulSoup(resp.raw_response.content,
-                            'lxml')  # using beautiful soup with lxml parser for better performance
-    potentialHyperLinks = soupObj.find_all(
-        'a')  # 'a' tag doesn't neccesarily mean hyperlink is present. must check for 'a tag with href attribute'
+    if resp is not None:
+        if resp.status == 200:
+            try:
+                soupObj = BeautifulSoup(resp.raw_response.content,
+                                        'lxml')  # using beautiful soup with lxml parser for better performance
+                potentialHyperLinks = soupObj.find_all(
+                    'a')  # 'a' tag doesn't neccesarily mean hyperlink is present. must check for 'a tag with href attribute'
 
-    # wordsInWebPage = []
-    for data in potentialHyperLinks:
-        hyperlinks.append(data.get(
-            "href"))  # Citation Above. Noticed finding all a-tags doesn't provide just hyperlinks, so learned and implemented going line by line to check for href attributes
-
+                # wordsInWebPage = []
+                for data in potentialHyperLinks:
+                    hyperlinks.append(data.get(
+                        "href"))  # Citation Above. Noticed finding all a-tags doesn't provide just hyperlinks, so learned and implemented going line by line to check for href attributes
+                return list(hyperlinks)
+            except AttributeError as e:
+                print(e)
+    print("resp was None")
     return list(hyperlinks)
+
 
 def is_valid(url):
     # Decide whether to crawl this url or not. 
@@ -44,13 +55,13 @@ def is_valid(url):
     try:
         parsed = urlparse(url)
         if parsed.scheme not in set(["http", "https"]):
-            print("failed at scheme")
+            # print("failed at scheme")
             return False
 
         # Check if the domain is within the allowed domains
         allowed_domains = ["www.ics.uci.edu", "www.cs.uci.edu", "www.informatics.uci.edu", "www.stat.uci.edu"]
         if parsed.netloc not in allowed_domains:
-            print("failed at domain")
+            # print("failed at domain")
             return False
 
         # Check if the URL has a fragment identifier
@@ -62,7 +73,7 @@ def is_valid(url):
             # url.frontier.to_be_downloaded is a list in frontier.py that stores all visited urls
             if url_without_fragment in url.frontier.to_be_downloaded: #need to cut down url to only without fragment?
                 return False
-                print("failed at fragment")
+                # print("failed at fragment")
             else:
                 # Mark the URL without the fragment as visited
                 url.frontier.to_be_downloaded.add(url_without_fragment)
@@ -76,14 +87,14 @@ def is_valid(url):
                    "/archive", "/sitemap", "/login", "/auth", "/404"]
         for trap in path_traps:
             if trap in parsed.path:
-                print("Failed at trap:", trap)
+                print("Found trap:", trap)
                 return False
 
         # Check for common traps in the query
-        query_traps = ["session=", "id=", "timestamp=", "ts="]
+        query_traps = ["session=", "timestamp=", "ts="]
         for trap in query_traps:
             if trap in parsed.query:
-                print("Failed at trap:", trap)
+                print("Found trap:", trap)
                 return False
 
 
@@ -111,3 +122,11 @@ if is_valid(url):
     print("This URL is valid.")
 else:
     print("This URL is not valid.")
+
+
+# TODO 1. pdfs
+# TODO 2. if a response is none we need to gtfo instead of pass none.content bc that throws an exception
+# TODO remove id as a trap?
+# todo fragment checker might not be matching any urls since the link at hand has fragment removed but the list in
+#  the frontier is the entire link. can fix by having a loop outside the try where each url.frontier.to.be.downloaded
+#  has its pre-fragment removed so that the "in" will produce matches
