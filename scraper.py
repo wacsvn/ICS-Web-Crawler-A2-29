@@ -207,9 +207,3 @@ else:
     print("This URL is not valid.")
 
 
-# TODO 1. pdfs
-# TODO 2. if a response is none we need to gtfo instead of pass none.content bc that throws an exception
-# TODO remove id as a trap?
-# todo fragment checker might not be matching any urls since the link at hand has fragment removed but the list in
-#  the frontier is the entire link. can fix by having a loop outside the try where each url.frontier.to.be.downloaded
-#  has its pre-fragment removed so that the "in" will produce matches
