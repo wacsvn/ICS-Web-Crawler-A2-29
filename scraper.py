@@ -73,7 +73,7 @@ def is_valid(url):
 
             # Check if the URL without the fragment has been visited
             # url.frontier.to_be_downloaded is a list in frontier.py that stores all visited urls
-            if url_without_fragment in url.frontier.to_be_downloaded: #need to cut down url to only without fragment?
+            if url_without_fragment in url.frontier.to_be_downloaded: # TODO REPLACE THIS WITH THE NEW GLOBAL DICT
                 return False
                 # print("failed at fragment")
             else:
@@ -99,6 +99,11 @@ def is_valid(url):
                 print("Found trap:", trap)
                 return False
 
+        # Check for date format traps in the path (yyyy-mm-dd format)
+        # Regex searches for any parsed path that has 4, 2, and 2 digits separated by hyphens
+        if re.search(r"/\d{4}-\d{2}-\d{2}/", parsed.path):
+            print("Found yyyy-mm-dd trap")
+            return False
 
         # Check for invalid file extensions
         return not re.match(
