@@ -4,6 +4,11 @@ import lxml
 from urllib.parse import urlparse
 from bs4 import BeautifulSoup
 
+
+#global variables
+dict = {} #(key(url), value(list
+
+
 def scraper(url, resp):
     try:
         links = extract_next_links(url, resp)
@@ -28,6 +33,11 @@ def extract_next_links(url, resp):
     Citations: https://pythonprogramminglanguage.com/get-links-from-webpage/
     '''
 
+    if dict[url]: #if url is already scraped, don't scrape again
+        return []
+
+
+
     hyperlinks = []
     unwantedTags = ["img", "nav"]
     stringWebPageContent = ""
@@ -41,6 +51,8 @@ def extract_next_links(url, resp):
                 #scraping hyperlinks in webpage
                 potentialHyperLinks = soupObj.find_all('a')  # 'a' tag doesn't neccesarily mean hyperlink is present. must check for 'a tag with href attribute'
                 for data in potentialHyperLinks:
+                    if data.get("href") == None: #some hyperlinks under a-tag don't have href attribute(url)
+                        continue
                     hyperlinks.append(data.get("href"))  # Citation Above. Noticed finding all a-tags doesn't provide just hyperlinks, so learned and implemented going line by line to check for href attributes
 
                 #scraping all text in webpage for computation of number of words, common words, etc.
@@ -48,17 +60,17 @@ def extract_next_links(url, resp):
                 for tag in webPageTags:
                     if tag in unwantedTags:
                         continue
-
                     stringWebPageContent += tag.text.strip()
 
 
                 tokensList = tokenizer(stringWebPageContent)
 
-
                 return list(hyperlinks)
             except AttributeError as e:
                 print(e)
     print("resp was None")
+
+    #TODO STORE IN DICTIONARY
     return list(hyperlinks)
 
 
@@ -66,7 +78,6 @@ def is_valid(url):
     # Decide whether to crawl this url or not. 
     # If you decide to crawl it, return True; otherwise return False.
     # There are already some conditions that return False.
-
     try:
         parsed = urlparse(url)
         if parsed.scheme not in set(["http", "https"]):
@@ -83,7 +94,6 @@ def is_valid(url):
         if "#" in parsed.fragment:
             # Extract the URL without the fragment identifier
             url_without_fragment = parsed.geturl()[:parsed.geturl().rfind("#")]
-
             # Check if the URL without the fragment has been visited
             # url.frontier.to_be_downloaded is a list in frontier.py that stores all visited urls
             if url_without_fragment in url.frontier.to_be_downloaded: #need to cut down url to only without fragment?
