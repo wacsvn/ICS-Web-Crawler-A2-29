@@ -1,6 +1,5 @@
 import re
 from collections import defaultdict
-
 import lxml
 from urllib.parse import urlparse
 from bs4 import BeautifulSoup
@@ -31,12 +30,12 @@ def extract_next_links(url, resp):
 
     hyperlinks = []
     unwantedTags = ["img", "nav"]
+    stringWebPageContent = ""
 
     # checks if the response status code is 200 and the content of the page is not empty
     if resp is not None and resp.raw_response.content:
         if resp.status == 200:
             try:
-
                 soupObj = BeautifulSoup(resp.raw_response.content,'lxml')  # using beautiful soup with lxml parser for better performance
 
                 #scraping hyperlinks in webpage
@@ -46,8 +45,14 @@ def extract_next_links(url, resp):
 
                 #scraping all text in webpage for computation of number of words, common words, etc.
                 webPageTags = soupObj.find_all()
-                for tags in webPageTags:
-                    
+                for tag in webPageTags:
+                    if tag in unwantedTags:
+                        continue
+
+                    stringWebPageContent += tag.text.strip()
+
+
+                tokensList = tokenizer(stringWebPageContent)
 
 
                 return list(hyperlinks)
