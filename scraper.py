@@ -34,7 +34,8 @@ def scraper(url, resp):
     try:
         links = extract_next_links(url, resp)
         return [link for link in links if is_valid(link)]
-    except AttributeError as e:
+    except Exception as e:
+        print("error in scraper")
         print(e)
 
 
@@ -65,7 +66,8 @@ def extract_next_links(url, resp):
     stringWebPageContent = ""
 
     # checks if the response status code is 200 and the content of the page is not empty
-    if resp is not None and resp.raw_response.content:
+    # if resp is not None and resp.raw_response.content:
+    if resp is not None and resp.raw_response is not None:
         if resp.status == 200:
             try:
                 soupObj = BeautifulSoup(resp.raw_response.content,'lxml')  # using beautiful soup with lxml parser for better performance
@@ -87,16 +89,21 @@ def extract_next_links(url, resp):
 
                 tokensList = tokenizer(stringWebPageContent)
 
+                while None in hyperlinks:
+                    hyperlinks.remove(None)
 
+                # return list(hyperlinks)
+                return hyperlinks
 
-                return list(hyperlinks)
-            except AttributeError as e:
+            except Exception as e:
+                print("error in extract")
                 print(e)
-    print("resp was None")
 
     #TODO STORE IN DICTIONARY
     dict[defragmentedUrl] = 1
-    return list(hyperlinks)
+
+    # return list(hyperlinks)
+    return hyperlinks
 
 
 def is_valid(url):
@@ -115,18 +122,18 @@ def is_valid(url):
             # print("failed at domain")
             return False
 
-        # Check if the URL has a fragment identifier
-        if "#" in parsed.fragment:
-            # Extract the URL without the fragment identifier
-            url_without_fragment = parsed.geturl()[:parsed.geturl().rfind("#")]
-            # Check if the URL without the fragment has been visited
-            # url.frontier.to_be_downloaded is a list in frontier.py that stores all visited urls
-            if url_without_fragment in url.frontier.to_be_downloaded: # TODO REPLACE THIS WITH THE NEW GLOBAL DICT
-                return False
-                # print("failed at fragment")
-            else:
-                # Mark the URL without the fragment as visited
-                url.frontier.to_be_downloaded.add(url_without_fragment)
+        # # Check if the URL has a fragment identifier
+        # if "#" in parsed.fragment:
+        #     # Extract the URL without the fragment identifier
+        #     url_without_fragment = parsed.geturl()[:parsed.geturl().rfind("#")]
+        #     # Check if the URL without the fragment has been visited
+        #     # url.frontier.to_be_downloaded is a list in frontier.py that stores all visited urls
+        #     if url_without_fragment in dict:
+        #         return False
+        #         print("found fragment")
+        #     else:
+        #         # Mark the URL without the fragment as visited
+        #         url.frontier.to_be_downloaded.add(url_without_fragment)
 
         #if not parsed.path.startswith("/"):
         #    return False
@@ -167,8 +174,9 @@ def is_valid(url):
             + r"|rm|smil|wmv|swf|wma|zip|rar|gz)$", parsed.path.lower())
 
     except TypeError:
+        print("error in is_valid")
         print ("TypeError for ", parsed)
-        raise
+
 
     return true
 
