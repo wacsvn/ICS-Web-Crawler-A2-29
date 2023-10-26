@@ -75,8 +75,8 @@ def extract_next_links(url, resp):
                 #scraping hyperlinks in webpage
                 potentialHyperLinks = soupObj.find_all('a')  # 'a' tag doesn't neccesarily mean hyperlink is present. must check for 'a tag with href attribute'
                 for data in potentialHyperLinks:
-                    if data.get("href") == None: #some hyperlinks under a-tag don't have href attribute(url)
-                        continue
+                    #if data.get("href") == None: #some hyperlinks under a-tag don't have href attribute(url)
+                        #continue
                     hyperlinks.append(data.get("href"))  # Citation Above. Noticed finding all a-tags doesn't provide just hyperlinks, so learned and implemented going line by line to check for href attributes
 
                 #scraping all text in webpage for computation of number of words, common words, etc. TODO maybe just get all text from webpage
@@ -178,7 +178,7 @@ def is_valid(url):
         print ("TypeError for ", parsed)
 
 
-    return true
+    #return True
 
 
 
