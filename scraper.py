@@ -54,13 +54,37 @@ def extract_next_links(url, resp):
     Citations: https://pythonprogramminglanguage.com/get-links-from-webpage/
     '''
 
-    defragmentedUrl = resp.url[:resp.url.rfind("#")] #derived from fragment checker in is_valid
+    # Check for relative URLs and construct absolute URLs manually
+    # Create urlparse objects based on parent and current url
+    parsedParent = urlparse(url)
+    parsedCurrent = urlparse(resp.url)
+    if not parsedCurrent.scheme and not parsedCurrent.netloc:
+        # Clean original url of anything path and onwards
+        parsedParent = parsedParent.scheme + parsedParent.netloc
+        if parsedCurrent.startswith('/'):
+            absolute_url = parsedParent + parsedCurrent
+        else:
+            absolute_url = parsedParent + '/' + parsedCurrent
 
+        parsedCurrent = absolute_url
+
+    # Cleaning by defragmenting
+    # Regex way
+    # defragmentedUrl = resp.url[:resp.url.rfind("#")] #derived from fragment checker in is_valid
+    defragmentedUrl = ""
+    for c in parsedCurrent:
+        if c == "#":
+            break
+        defragmentedUrl += c
+
+
+
+    # Duplicate Checking
     if defragmentedUrl in dict: #if url is already scraped, don't scrape again
         return []
 
 
-
+    # List of hyperlinks to return
     hyperlinks = []
     unwantedTags = ["img", "nav"] #TODO figure out any other unwanted tags
     stringWebPageContent = ""
@@ -77,8 +101,21 @@ def extract_next_links(url, resp):
                 for data in potentialHyperLinks:
                     #if data.get("href") == None: #some hyperlinks under a-tag don't have href attribute(url)
                         #continue
-                    hyperlinks.append(data.get("href"))  # Citation Above. Noticed finding all a-tags doesn't provide just hyperlinks, so learned and implemented going line by line to check for href attributes
 
+
+                    #check if data is a relative URL
+                    parsedParentHyperLink = urlparse(url)
+                    parsedCurrentHyperLink = urlparse(resp.url)
+                    currentScrapedLink = data.get("href")
+
+                    if currentScrapedLink[0] == '/': #means relative url
+                        parsedParentHyperLink = parsedCurrentHyperLink.scheme + parsedParentHyperLink.netloc
+                        newAbsoluteLink = parsedParentHyperLink + currentScrapedLink
+                        hyperlinks.append(newAbsoluteLink)
+                    else:
+                        hyperlinks.append(currentScrapedLink)
+
+                    # Citation Above. Noticed finding all a-tags doesn't provide just hyperlinks, so learned and implemented going line by line to check for href attributes
                 #scraping all text in webpage for computation of number of words, common words, etc. TODO maybe just get all text from webpage
                 webPageTags = soupObj.find_all()
                 for tag in webPageTags:
@@ -107,11 +144,21 @@ def extract_next_links(url, resp):
 
 
 def is_valid(url):
-    # Decide whether to crawl this url or not. 
+
+
+    # Decide whether to crawl this url or not.
     # If you decide to crawl it, return True; otherwise return False.
     # There are already some conditions that return False.
+
     try:
         parsed = urlparse(url)
+
+        # #  Check for relative URLs and convert them into absolute URLs
+        # if not parsed.scheme or not parsed.netloc:
+        #     absolute_url = urljoin(parent_url, url)
+        #     parsed = urlparse(absolute_url)
+
+
         if parsed.scheme not in set(["http", "https"]):
             # print("failed at scheme")
             return False
@@ -178,7 +225,7 @@ def is_valid(url):
         print ("TypeError for ", parsed)
 
 
-    #return True
+    return True
 
 
 
@@ -205,5 +252,3 @@ if is_valid(url):
     print("This URL is valid.")
 else:
     print("This URL is not valid.")
-
-
