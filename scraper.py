@@ -77,8 +77,6 @@ def extract_next_links(url, resp):
             break
         defragmentedUrl += c
 
-
-
     # Duplicate Checking
     if defragmentedUrl in dict: #if url is already scraped, don't scrape again
         return []
@@ -91,6 +89,7 @@ def extract_next_links(url, resp):
 
     # checks if the response status code is 200 and the content of the page is not empty
     # if resp is not None and resp.raw_response.content:
+
     if resp is not None and resp.raw_response is not None:
         if resp.status == 200:
             try:
@@ -99,8 +98,8 @@ def extract_next_links(url, resp):
                 #scraping hyperlinks in webpage
                 potentialHyperLinks = soupObj.find_all('a')  # 'a' tag doesn't neccesarily mean hyperlink is present. must check for 'a tag with href attribute'
                 for data in potentialHyperLinks:
-                    #if data.get("href") == None: #some hyperlinks under a-tag don't have href attribute(url)
-                        #continue
+                    if data.get("href") == None: #some hyperlinks under a-tag don't have href attribute(url)
+                        continue
 
 
                     #check if data is a relative URL
@@ -112,6 +111,7 @@ def extract_next_links(url, resp):
                         parsedParentHyperLink = parsedCurrentHyperLink.scheme + parsedParentHyperLink.netloc
                         newAbsoluteLink = parsedParentHyperLink + currentScrapedLink
                         hyperlinks.append(newAbsoluteLink)
+                        print("transformed rel to abs inside scraping")
                     else:
                         hyperlinks.append(currentScrapedLink)
 
