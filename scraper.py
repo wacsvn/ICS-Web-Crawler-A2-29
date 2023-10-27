@@ -37,20 +37,21 @@ def scraper(url, resp):
             links = extract_next_links(url, resp)
             return [link for link in links if is_valid(link)]
         # Redirect Statuses
-        elif resp.status > 299 or resp.status < 400:
-            redirected_url = resp.url
-            redirected_resp = resp.get(redirected_url)
+        elif resp.status > 299 and resp.status < 400:
+            # Extract the redirected URL from the response headers
+            redirected_url = resp.headers.get('Location')
 
-            # wtf is the point in this
-            if redirected_resp.status_code == 200:
-                links = extract_next_links(redirected_url, redirected_resp)
+            if redirected_url:
+                # Consider the redirected URL as valid and try to extract links
+                links = extract_next_links(redirected_url, resp)
                 return [link for link in links if is_valid(link)]
         else:
-            print(f"Recieved Status Code {resp.status} for URL: {url}")
+            print(f"Received Status Code {resp.status} for URL: {url}")
             return []
     except Exception as e:
         print(f"Error in scraper while processing {url}: {str(e)}")
         print(e)
+
 
 
 def extract_next_links(url, resp):
