@@ -4,9 +4,9 @@ import lxml
 from urllib.parse import *
 from bs4 import BeautifulSoup
 
-#global variables
-dict = {} #(key(url), value(list
-listOfStopwords = [   #taken from https://www.ranks.nl/stopwords, which was provided in a2 instructions
+# global variables
+dict = {}  # (key(url), value(list
+listOfStopwords = [  # taken from https://www.ranks.nl/stopwords, which was provided in a2 instructions
     "a", "about", "above", "after", "again", "against", "all", "am", "an", "and",
     "any", "are", "aren't", "as", "at", "be", "because", "been", "before",
     "being", "below", "between", "both", "but", "by", "can't", "cannot",
@@ -29,7 +29,6 @@ listOfStopwords = [   #taken from https://www.ranks.nl/stopwords, which was prov
     "you", "you'd", "you'll", "you're", "you've", "your", "yours", "yourself", "yourselves"]
 
 
-
 def scraper(url, resp):
     try:
         # Valid Statuses
@@ -39,8 +38,8 @@ def scraper(url, resp):
         # Redirect Statuses
         elif resp.status > 299 and resp.status < 400:
             # Extract the redirected URL from the response headers
-            redirected_url = resp.headers.get('Location')
-
+            
+            redirected_url = resp.url
             if redirected_url:
                 # Consider the redirected URL as valid and try to extract links
                 links = extract_next_links(redirected_url, resp)
@@ -51,7 +50,6 @@ def scraper(url, resp):
     except Exception as e:
         print(f"Error in scraper while processing {url}: {str(e)}")
         print(e)
-
 
 
 def extract_next_links(url, resp):
@@ -69,146 +67,75 @@ def extract_next_links(url, resp):
     Citations: https://pythonprogramminglanguage.com/get-links-from-webpage/
     '''
 
-    # Check for relative URLs and construct absolute URLs manually
-    # Create urlparse objects based on parent and current url
-    parsedParent = urlparse(url)
-    parsedCurrent = urlparse(resp.url)
-    if not parsedCurrent.scheme and not parsedCurrent.netloc:
-        # Clean original url of anything path and onwards
-        parsedParent = parsedParent.scheme + parsedParent.netloc
-        if parsedCurrent.startswith('/'):
-            absolute_url = parsedParent + parsedCurrent
-        else:
-            absolute_url = parsedParent + '/' + parsedCurrent
-
-        parsedCurrent = absolute_url
-
-    # Cleaning by defragmenting
-    # Regex way
-    # defragmentedUrl = resp.url[:resp.url.rfind("#")] #derived from fragment checker in is_valid
-<<<<<<< HEAD
-    defragmentedUrl = ""
-    for c in parsedCurrent:
-        if c == "#":
-            break
-        defragmentedUrl += c
-=======
-    # defragmentedUrl = ""
-    # for c in parsedCurrent:
-    #     if c == "#":
-    #         break
-    #     defragmentedUrl += c
-
-    # defragment split: splits curernt url into two, separated by the #. then takes the first half i.e. the half without the fragment
-    defragmentedUrl = resp.url.split("#")[0]
->>>>>>> 436957b16aef103482f2511e5ebc0914fe31e9ad
-
-    # Duplicate Checking
-    if defragmentedUrl in dict: #if url is already scraped, don't scrape again
-        return []
-
-
     # List of hyperlinks to return
     hyperlinks = []
-    unwantedTags = ["img", "nav"] #TODO figure out any other unwanted tags
+    unwantedTags = ["img", "nav"]  # TODO figure out any other unwanted tags
     stringWebPageContent = ""
 
     # checks if the response status code is 200 and the content of the page is not empty
     # if resp is not None and resp.raw_response.content:
-<<<<<<< HEAD
-
-    if resp is not None and resp.raw_response is not None:
-        if resp.status == 200:
-            try:
-                soupObj = BeautifulSoup(resp.raw_response.content,'lxml')  # using beautiful soup with lxml parser for better performance
-
-                #scraping hyperlinks in webpage
-                potentialHyperLinks = soupObj.find_all('a')  # 'a' tag doesn't neccesarily mean hyperlink is present. must check for 'a tag with href attribute'
-                for data in potentialHyperLinks:
-                    if data.get("href") == None: #some hyperlinks under a-tag don't have href attribute(url)
-                        continue
-
-
-                    #check if data is a relative URL
-                    parsedParentHyperLink = urlparse(url)
-                    parsedCurrentHyperLink = urlparse(resp.url)
-                    currentScrapedLink = data.get("href")
-
-                    if currentScrapedLink[0] == '/': #means relative url
-                        parsedParentHyperLink = parsedCurrentHyperLink.scheme + parsedParentHyperLink.netloc
-                        newAbsoluteLink = parsedParentHyperLink + currentScrapedLink
-                        hyperlinks.append(newAbsoluteLink)
-                        print("transformed rel to abs inside scraping")
-                    else:
-                        hyperlinks.append(currentScrapedLink)
-
-                    # Citation Above. Noticed finding all a-tags doesn't provide just hyperlinks, so learned and implemented going line by line to check for href attributes
-                #scraping all text in webpage for computation of number of words, common words, etc. TODO maybe just get all text from webpage
-                webPageTags = soupObj.find_all()
-                for tag in webPageTags:
-                    if tag in unwantedTags:
-                        continue
-                    stringWebPageContent += tag.text.strip()
-=======
     try:
-        soupObj = BeautifulSoup(resp.raw_response.content,'lxml')  # using beautiful soup with lxml parser for better performance
+        soupObj = BeautifulSoup(resp.raw_response.content, 'lxml')  # using beautiful soup with lxml parser for better performance
 
-        #scraping hyperlinks in webpage
+        # scraping hyperlinks in webpage
         potentialHyperLinks = soupObj.find_all('a')  # 'a' tag doesn't neccesarily mean hyperlink is present. must check for 'a tag with href attribute'
         for data in potentialHyperLinks:
-            if data.get("href") == None: #some hyperlinks under a-tag don't have href attribute(url)
+            if data.get("href") is None:  # some hyperlinks under a-tag don't have href attribute(url)
                 continue
 
-
-            #check if data is a relative URL
-            parsedParentHyperLink = urlparse(url)
-            parsedCurrentHyperLink = urlparse(resp.url)
+            # check if data is a relative URL
             currentScrapedLink = data.get("href")
 
-            if currentScrapedLink: # link exists?
-                if currentScrapedLink.startswith('/'): #means relative url
-                    # parsedParentHyperLink = parsedCurrentHyperLink.scheme + parsedParentHyperLink.netloc
-                    # newAbsoluteLink = parsedParentHyperLink + currentScrapedLink
-                    # hyperlinks.append(newAbsoluteLink)
-                    newAbsoluteLink = urljoin(url, currentScrapedLink)
-                    hyperlinks.append(newAbsoluteLink)
-                    print("transformed rel to abs inside scraping")
+            # defragment split: splits current url into two, separated by the #. then takes the first half i.e. the half without the fragment
+            defragmentedUrl = currentScrapedLink.split("#")[0]  # TODO MIGHT BE ERROR IF CURRENTSCRAPEDLINK DOES NOT ALLOW SPLIT
+
+            # Source: https://www.webdevbydoing.com/absolute-relative-and-root-relative-file-paths/
+            if defragmentedUrl:  # link exists?
+                if not defragmentedUrl.startswith('http://') and not defragmentedUrl.startswith(
+                        'https://'):  # absolute URL Check
+                    newAbsoluteLink = urljoin(url, defragmentedUrl)
                 else:
-                    # else already absolute so add to the scrapedhyperlinks list
-                    hyperlinks.append(currentScrapedLink)
->>>>>>> 436957b16aef103482f2511e5ebc0914fe31e9ad
+                    newAbsoluteLink = defragmentedUrl
 
-            # Citation Above. Noticed finding all a-tags doesn't provide just hyperlinks, so learned and implemented going line by line to check for href attributes
-        #scraping all text in webpage for computation of number of words, common words, etc. TODO maybe just get all text from webpage
-        webPageTags = soupObj.find_all()
-        for tag in webPageTags:
-            if tag in unwantedTags:
-                continue
-            stringWebPageContent += tag.text.strip()
+                # http://www.ics.uci.edu/alumni/stayconnected/index.php
+                parsedURL = urlparse(newAbsoluteLink)
 
+                # http://www.ics.uci.edu/alumni/stayconnected/stayconnected/index.php
+                
+                if parsedURL.path is not None:
+                    duplicate = False
+                    pathDict = {}
+                    urlPath = parsedURL.path.split('/')
+                    for path in urlPath:
+                        if path in pathDict:
+                            duplicate = True
+                            break
+                        else:
+                            pathDict[path] = 1
 
-            tokensList = tokenizer(stringWebPageContent)
+                    if duplicate:  # don't add URL to hyperlink
+                        continue
 
-            while None in hyperlinks:
-                hyperlinks.remove(None)
+                # Duplicate Checking
+                if newAbsoluteLink in dict:  # TODO FIRST SEED URL MIGHT RUN INTO DUPLICATE
+                    continue
+                else:
+                    dict[newAbsoluteLink] = 1
 
-            # return list(hyperlinks)
-            return hyperlinks
+                # textual check goes here
+                # indent correct?
+                # if less than 10 words and no links, not valuable
+                hyperlinks.append(newAbsoluteLink)
 
     except Exception as e:
         print("error in extract")
         print(e)
 
-    #TODO STORE IN DICTIONARY
-    dict[defragmentedUrl] = 1
-
-    # return list(hyperlinks)
+    print(hyperlinks)
     return hyperlinks
 
 
 def is_valid(url):
-
-
     # Decide whether to crawl this url or not.
     # If you decide to crawl it, return True; otherwise return False.
     # There are already some conditions that return False.
@@ -220,7 +147,6 @@ def is_valid(url):
         # if not parsed.scheme or not parsed.netloc:
         #     absolute_url = urljoin(parent_url, url)
         #     parsed = urlparse(absolute_url)
-
 
         if parsed.scheme not in set(["http", "https"]):
             # print("failed at scheme")
@@ -245,19 +171,20 @@ def is_valid(url):
         #         # Mark the URL without the fragment as visited
         #         url.frontier.to_be_downloaded.add(url_without_fragment)
 
-        #if not parsed.path.startswith("/"):
+        # if not parsed.path.startswith("/"):
         #    return False
 
         # TRAP CHECKING
         # Check for common traps in the path
+        #TODO why is redirect here? shouldn't we be handling?
         path_traps = ["/calendar", "/ical", "/redirect", "/session", "/logout", "/search", "/user/", "/error",
-                "/archive", "/sitemap", "/login", "/auth", "/404"]
+                      "/archive", "/sitemap", "/login", "/auth", "/404", "/~eppstein/pix/", "/community/news/view_news"]
         for trap in path_traps:
             if trap in parsed.path:
                 print("Found trap:", trap)
                 return False
 
-        #TODO check traps for tags
+        # TODO check traps for tags
 
         # Check for common traps in the query
         query_traps = ["session=", "timestamp=", "ts=", ]
@@ -281,37 +208,29 @@ def is_valid(url):
             + r"|data|dat|exe|bz2|tar|msi|bin|7z|psd|dmg|iso"
             + r"|epub|dll|cnf|tgz|sha1"
             + r"|thmx|mso|arff|rtf|jar|csv"
-            + r"|rm|smil|wmv|swf|wma|zip|rar|gz|ods)$", parsed.path.lower())
+            + r"|rm|smil|wmv|swf|wma|zip|rar|gz|ods|mpg)$", parsed.path.lower())
 
     except TypeError:
         print("error in is_valid")
-        print ("TypeError for ", parsed)
+        print("TypeError for ", parsed)
+
+    return False
 
 
-    return True
-
-
-
-def tokenizer(text): #derived from assignment 1
+def tokenizer(text):  # derived from assignment 1
     tokens = re.findall(r'[a-zA-Z0-9]+', text.lower())
     return tokens
 
-def countWordsOnPage(): #derived from assignment 1
+
+def countWordsOnPage():  # derived from assignment 1
     pass
 
-def computeWordFrequencies(tokensList): #derived from assignment 1
+
+def computeWordFrequencies(tokensList):  # derived from assignment 1
     token_count = defaultdict(int)
     for token in tokensList:
         token_count[token] += 1
 
-def countCommonTokens(urlList): #derived from assignment 1
+
+def countCommonTokens(urlList):  # derived from assignment 1
     pass
-
-
-
-# Testing:
-url = "http://www.ics.uci.edu/calendar/"
-if is_valid(url):
-    print("This URL is valid.")
-else:
-    print("This URL is not valid.")
