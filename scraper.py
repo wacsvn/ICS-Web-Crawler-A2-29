@@ -6,7 +6,7 @@ from urllib.parse import *
 from bs4 import BeautifulSoup
 import pickle
 
-#global variables
+# global variables
 try:
     with open("dict.pickle", "r") as f:
         dict = pickle.load(f)
@@ -16,7 +16,8 @@ except FileNotFoundError:
 # Solution: use counter to store elements to allow us to use most.common(n) function to find most common words
 # Source: https://www.digitalocean.com/community/tutorials/python-counter-python-collections-counter#most-_common-n
 # Source 2: https://stackoverflow.com/questions/25558440/how-to-crawl-multiple-websites-to-find-common-words-beautifulsoup-requests-pyth
-# This might still not be the best solution to the "Storing Every Token" problem but counter is the best way to find common words
+# This might still not be the best solution to the "Storing Every Token" problem
+# but counter is the best way to find common words
 
 allTokens = collections.Counter()
 
@@ -24,7 +25,7 @@ longestPage = ""
 longestPage_Size = 0
 
 
-listOfStopwords = [   #taken from https://www.ranks.nl/stopwords, which was provided in a2 instructions
+listOfStopwords = [   # taken from https://www.ranks.nl/stopwords, which was provided in a2 instructions
     "a", "about", "above", "after", "again", "against", "all", "am", "an", "and",
     "any", "are", "aren't", "as", "at", "be", "because", "been", "before",
     "being", "below", "between", "both", "but", "by", "can't", "cannot",
@@ -47,10 +48,11 @@ listOfStopwords = [   #taken from https://www.ranks.nl/stopwords, which was prov
     "you", "you'd", "you'll", "you're", "you've", "your", "yours", "yourself", "yourselves"]
 
 
-
 def scraper(url, resp):
     try:
         # Valid Statuses
+        # TODO: check and avoid dead URLS
+        # why abandon the raw.content check in if?
         if resp.status > 199 and resp.status < 300:
             links = extract_next_links(url, resp)
             return [link for link in links if is_valid(link)]
@@ -83,35 +85,38 @@ def extract_next_links(url, resp):
     #         resp.raw_response.content: the content of the page!
     # Return a list with the hyperlinks (as strings) scrapped from resp.raw_response.content
 
-    '''
-    Citations: https://pythonprogramminglanguage.com/get-links-from-webpage/
-    '''
+
+    # Citations: https://pythonprogramminglanguage.com/get-links-from-webpage/
+
 
 
     # List of hyperlinks to return
     hyperlinks = []
-    unwantedTags = ["img", "nav"] #TODO figure out any other unwanted tags
+    unwantedTags = ["img", "nav"] # TODO figure out any other unwanted tags
     stringWebPageContent = ""
 
     # checks if the response status code is 200 and the content of the page is not empty
     # if resp is not None and resp.raw_response.content:
     try:
-        soupObj = BeautifulSoup(resp.raw_response.content,'lxml')  # using beautiful soup with lxml parser for better performance
+        # using beautiful soup with lxml parser for better performance
+        soupObj = BeautifulSoup(resp.raw_response.content, 'lxml')
 
-        #scraping hyperlinks in webpage
-        potentialHyperLinks = soupObj.find_all('a')  # 'a' tag doesn't neccesarily mean hyperlink is present. must check for 'a tag with href attribute'
+        # scraping hyperlinks in webpage
+        # 'a' tag doesn't necessarily mean hyperlink is present. must check for 'a tag with href attribute'
+        potentialHyperLinks = soupObj.find_all('a')
         for data in potentialHyperLinks:
-            if data.get("href") == None: #some hyperlinks under a-tag don't have href attribute(url)
+            if data.get("href") == None: # some hyperlinks under a-tag don't have href attribute(url)
                 continue
 
-
-            #check if data is a relative URL
+            # check if data is a relative URL
             currentScrapedLink = data.get("href")
 
-            # defragment split: splits current url into two, separated by the #. then takes the first half i.e. the half without the fragment
-            defragmentedUrl = currentScrapedLink.split("#")[0] #TODO MIGHT BE ERROR IF CURRENTSCRAPEDLINK DOES NOT ALLOW SPLIT
+            # defragment split: splits current url into two, separated by the #.
+            # then takes the first half i.e. the half without the fragment
+            defragmentedUrl = currentScrapedLink.split("#")[0]
+            # TODO: MIGHT BE ERROR IF CURRENTSCRAPEDLINK DOES NOT ALLOW SPLIT
 
-            #Source: https://www.webdevbydoing.com/absolute-relative-and-root-relative-file-paths/
+            # Source: https://www.webdevbydoing.com/absolute-relative-and-root-relative-file-paths/
             if defragmentedUrl: # link exists?
                 if not defragmentedUrl.startswith('http://') and not defragmentedUrl.startswith('https://'): #absolute URL Check
                     newAbsoluteLink = urljoin(url, defragmentedUrl)
@@ -131,15 +136,13 @@ def extract_next_links(url, resp):
         # textual check goes here
         # indent correct?
         # if less than 10 words and no links, not valuable
-
-
                 hyperlinks.append(newAbsoluteLink)
 
-
-
-            # Citation Above. Noticed finding all a-tags doesn't provide just hyperlinks, so learned and implemented going line by line to check for href attributes
-        #scraping all text in webpage for computation of number of words, common words, etc. TODO maybe just get all text from webpage
-        webPageTags = soupObj.find_all() # why not just write: for tag in soupObj.find_all() ?
+        # Citation Above. Noticed finding all a-tags doesn't provide just hyperlinks,
+        # so learned and implemented going line by line to check for href attributes
+        # scraping all text in webpage for computation of number of words, common words, etc.
+        # TODO maybe just get all text from webpage
+        webPageTags = soupObj.find_all()  # why not just write: for tag in soupObj.find_all() ?
         for tag in webPageTags:
             if tag in unwantedTags:
                 continue
@@ -209,7 +212,7 @@ def is_valid(url):
         #         # Mark the URL without the fragment as visited
         #         url.frontier.to_be_downloaded.add(url_without_fragment)
 
-        #if not parsed.path.startswith("/"):
+        # if not parsed.path.startswith("/"):
         #    return False
 
         # TRAP CHECKING
