@@ -4,8 +4,12 @@ import lxml
 from urllib.parse import *
 from bs4 import BeautifulSoup
 
-# global variables
-dict = {}  # (key(url), value(list
+#global variables
+try:
+    with open("dict.pickle", "r") as f:
+        dict = pickle.load(f)
+except FileNotFoundError:
+    dict = {}  # Initialize as an empty dictionary if the file doesn't exist #(key(url), value(list)
 listOfStopwords = [  # taken from https://www.ranks.nl/stopwords, which was provided in a2 instructions
     "a", "about", "above", "after", "again", "against", "all", "am", "an", "and",
     "any", "are", "aren't", "as", "at", "be", "because", "been", "before",
@@ -38,11 +42,14 @@ def scraper(url, resp):
         # Redirect Statuses
         elif resp.status > 299 and resp.status < 400:
             # Extract the redirected URL from the response headers
-            
             redirected_url = resp.url
+
             if redirected_url:
                 # Consider the redirected URL as valid and try to extract links
                 links = extract_next_links(redirected_url, resp)
+                return [link for link in links if is_valid(link)]
+            else:
+                links = extract_next_links(url, resp)
                 return [link for link in links if is_valid(link)]
         else:
             print(f"Received Status Code {resp.status} for URL: {url}")
@@ -74,11 +81,15 @@ def extract_next_links(url, resp):
 
     # checks if the response status code is 200 and the content of the page is not empty
     # if resp is not None and resp.raw_response.content:
+    excludeDict = {}
+    excludeDict["Problem"] = []
     try:
-        soupObj = BeautifulSoup(resp.raw_response.content, 'lxml')  # using beautiful soup with lxml parser for better performance
+        soupObj = BeautifulSoup(resp.raw_response.content,
+                                'lxml')  # using beautiful soup with lxml parser for better performance
 
         # scraping hyperlinks in webpage
-        potentialHyperLinks = soupObj.find_all('a')  # 'a' tag doesn't neccesarily mean hyperlink is present. must check for 'a tag with href attribute'
+        potentialHyperLinks = soupObj.find_all(
+            'a')  # 'a' tag doesn't neccesarily mean hyperlink is present. must check for 'a tag with href attribute'
         for data in potentialHyperLinks:
             if data.get("href") is None:  # some hyperlinks under a-tag don't have href attribute(url)
                 continue
@@ -87,7 +98,8 @@ def extract_next_links(url, resp):
             currentScrapedLink = data.get("href")
 
             # defragment split: splits current url into two, separated by the #. then takes the first half i.e. the half without the fragment
-            defragmentedUrl = currentScrapedLink.split("#")[0]  # TODO MIGHT BE ERROR IF CURRENTSCRAPEDLINK DOES NOT ALLOW SPLIT
+            defragmentedUrl = currentScrapedLink.split("#")[
+                0]  # TODO MIGHT BE ERROR IF CURRENTSCRAPEDLINK DOES NOT ALLOW SPLIT
 
             # Source: https://www.webdevbydoing.com/absolute-relative-and-root-relative-file-paths/
             if defragmentedUrl:  # link exists?
@@ -101,19 +113,24 @@ def extract_next_links(url, resp):
                 parsedURL = urlparse(newAbsoluteLink)
 
                 # http://www.ics.uci.edu/alumni/stayconnected/stayconnected/index.php
-                
                 if parsedURL.path is not None:
                     duplicate = False
                     pathDict = {}
                     urlPath = parsedURL.path.split('/')
                     for path in urlPath:
-                        if path in pathDict:
+                        if path == '':
+                            continue
+                        if path not in pathDict:
+                            pathDict[path] = 1
+                        else:
+                            pathDict[path] += 1
+
+                        if pathDict[path] > 1:
                             duplicate = True
                             break
-                        else:
-                            pathDict[path] = 1
 
                     if duplicate:  # don't add URL to hyperlink
+                        excludeDict["Problem"].append(newAbsoluteLink)
                         continue
 
                 # Duplicate Checking
@@ -122,16 +139,24 @@ def extract_next_links(url, resp):
                 else:
                     dict[newAbsoluteLink] = 1
 
+                    # store in failsafe pickle
+                    with open("dict.pickle", "w") as f:
+                        pickle.dump(dict, f)
+
                 # textual check goes here
                 # indent correct?
                 # if less than 10 words and no links, not valuable
                 hyperlinks.append(newAbsoluteLink)
 
+            # Citation Above. Noticed finding all a-tags doesn't provide just hyperlinks, so learned and implemented going line by line to check for href attributes
+        # scraping all text in webpage for computation of number of words, common words, etc. TODO maybe just get all text from webpage
+
     except Exception as e:
         print("error in extract")
         print(e)
-
-    print(hyperlinks)
+    print("***************************************************************************")
+    print("EXCLUDING LIST")
+    print(excludeDict["Problem"])
     return hyperlinks
 
 
@@ -149,13 +174,20 @@ def is_valid(url):
         #     parsed = urlparse(absolute_url)
 
         if parsed.scheme not in set(["http", "https"]):
-            # print("failed at scheme")
+            print("http or https TRAP from: ", url)
             return False
 
         # Check if the domain is within the allowed domains
-        allowed_domains = ["www.ics.uci.edu", "www.cs.uci.edu", "www.informatics.uci.edu", "www.stat.uci.edu"]
-        if parsed.netloc not in allowed_domains:
-            # print("failed at domain")
+        allowed_domains = ["ics.uci.edu", "cs.uci.edu", "informatics.uci.edu",
+                           "stat.uci.edu"]  # physics.uci since using ends with allows certain domains according to log file
+        tempFlag = False
+        for domain in allowed_domains:
+            if parsed.hostname is not None and parsed.hostname.endswith(domain):
+                tempFlag = True
+                break
+
+        if tempFlag == False:
+            print("Not allowed domains Trap from: ", url)
             return False
 
         # # Check if the URL has a fragment identifier
@@ -174,41 +206,50 @@ def is_valid(url):
         # if not parsed.path.startswith("/"):
         #    return False
 
+        blacklist = ["swiki.ics.uci.edu", "physics.uci.edu", "eecs.uci.edu"]
+        for trap in blacklist:
+            if parsed.hostname is None or parsed.hostname.endswith(trap):
+                print("BLACKLISTED WEBSITE: ", url)
+                return False
+
         # TRAP CHECKING
         # Check for common traps in the path
-        #TODO why is redirect here? shouldn't we be handling?
-        path_traps = ["/calendar", "/ical", "/redirect", "/session", "/logout", "/search", "/user/", "/error",
-                      "/archive", "/sitemap", "/login", "/auth", "/404", "/~eppstein/pix/", "/community/news/view_news"]
+        path_traps = ["/calendar", "/ical", "/logout", "/search", "/error", "/login", "/auth", "/404",
+                      "/~eppstein/pix/", "/community/news/view_news", "/doku.php"]
         for trap in path_traps:
             if trap in parsed.path:
-                print("Found trap:", trap)
+                print("Found trap:", trap, " in: ", url)
                 return False
 
         # TODO check traps for tags
 
         # Check for common traps in the query
-        query_traps = ["session=", "timestamp=", "ts=", ]
+        query_traps = ["timestamp=", "ts=", "session="]
         for trap in query_traps:
             if trap in parsed.query:
-                print("Found trap:", trap)
+                print("Found trap:", trap, " in: ", url)
                 return False
 
         # Check for date format traps in the path (yyyy-mm-dd format)
         # Regex searches for any parsed path that has 4, 2, and 2 digits separated by hyphens
         if re.search(r"/\d{4}-\d{2}-\d{2}/", parsed.path):
-            print("Found yyyy-mm-dd trap")
+            print("Found yyyy-mm-dd trap,:", url)
             return False
 
         # Check for invalid file extensions
-        return not re.match(
-            r".*\.(css|js|bmp|gif|jpe?g|ico"
-            + r"|png|tiff?|mid|mp2|mp3|mp4"
-            + r"|wav|avi|mov|mpeg|ram|m4v|mkv|ogg|ogv|pdf"
-            + r"|ps|eps|tex|ppt|pptx|doc|docx|xls|xlsx|names"
-            + r"|data|dat|exe|bz2|tar|msi|bin|7z|psd|dmg|iso"
-            + r"|epub|dll|cnf|tgz|sha1"
-            + r"|thmx|mso|arff|rtf|jar|csv"
-            + r"|rm|smil|wmv|swf|wma|zip|rar|gz|ods|mpg)$", parsed.path.lower())
+        if re.match(
+                r".*\.(css|js|bmp|gif|jpe?g|ico"
+                + r"|png|tiff?|mid|mp2|mp3|mp4"
+                + r"|wav|avi|mov|mpeg|ram|m4v|mkv|ogg|ogv|pdf"
+                + r"|ps|eps|tex|ppt|pptx|doc|docx|xls|xlsx|names"
+                + r"|data|dat|exe|bz2|tar|msi|bin|7z|psd|dmg|iso"
+                + r"|epub|dll|cnf|tgz|sha1"
+                + r"|thmx|mso|arff|rtf|jar|csv"
+                + r"|rm|smil|wmv|swf|wma|zip|rar|gz|ods|mpg|img|war|apk)$", parsed.path.lower()):
+            print("Found File Extension TRAP, ", url)
+            return False
+        else:
+            return True
 
     except TypeError:
         print("error in is_valid")
