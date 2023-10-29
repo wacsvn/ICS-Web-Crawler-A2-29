@@ -1,12 +1,30 @@
+import collections
 import re
 from collections import defaultdict
 import lxml
 from urllib.parse import *
 from bs4 import BeautifulSoup
+import pickle
 
-# global variables
-dict = {}  # (key(url), value(list
-listOfStopwords = [  # taken from https://www.ranks.nl/stopwords, which was provided in a2 instructions
+#global variables
+try:
+    with open("dict.pickle", "r") as f:
+        dict = pickle.load(f)
+except FileNotFoundError:
+    dict = {}  # Initialize as an empty dictionary for crawled urls if the file doesn't exist # (key(url), value(list)
+
+# TEMPORARY: storage for every token found.
+# TODO: find better solution
+# Solution: use counter to store elements to allow us to use most.common(n) function to find most common words
+# Source: https://www.digitalocean.com/community/tutorials/python-counter-python-collections-counter#most-_common-n
+# Source 2: https://stackoverflow.com/questions/25558440/how-to-crawl-multiple-websites-to-find-common-words-beautifulsoup-requests-pyth
+allTokens = collections.Counter()
+
+largestSite = ""
+largestSite_Size = 0
+
+
+listOfStopwords = [   #taken from https://www.ranks.nl/stopwords, which was provided in a2 instructions
     "a", "about", "above", "after", "again", "against", "all", "am", "an", "and",
     "any", "are", "aren't", "as", "at", "be", "because", "been", "before",
     "being", "below", "between", "both", "but", "by", "can't", "cannot",
@@ -29,6 +47,7 @@ listOfStopwords = [  # taken from https://www.ranks.nl/stopwords, which was prov
     "you", "you'd", "you'll", "you're", "you've", "your", "yours", "yourself", "yourselves"]
 
 
+
 def scraper(url, resp):
     try:
         # Valid Statuses
@@ -38,8 +57,8 @@ def scraper(url, resp):
         # Redirect Statuses
         elif resp.status > 299 and resp.status < 400:
             # Extract the redirected URL from the response headers
-            
-            redirected_url = resp.url
+            redirected_url = resp.headers.get('Location')
+
             if redirected_url:
                 # Consider the redirected URL as valid and try to extract links
                 links = extract_next_links(redirected_url, resp)
@@ -50,6 +69,7 @@ def scraper(url, resp):
     except Exception as e:
         print(f"Error in scraper while processing {url}: {str(e)}")
         print(e)
+
 
 
 def extract_next_links(url, resp):
@@ -67,54 +87,36 @@ def extract_next_links(url, resp):
     Citations: https://pythonprogramminglanguage.com/get-links-from-webpage/
     '''
 
+
     # List of hyperlinks to return
     hyperlinks = []
-    unwantedTags = ["img", "nav"]  # TODO figure out any other unwanted tags
+    unwantedTags = ["img", "nav"] #TODO figure out any other unwanted tags
     stringWebPageContent = ""
 
     # checks if the response status code is 200 and the content of the page is not empty
     # if resp is not None and resp.raw_response.content:
     try:
-        soupObj = BeautifulSoup(resp.raw_response.content, 'lxml')  # using beautiful soup with lxml parser for better performance
+        soupObj = BeautifulSoup(resp.raw_response.content,'lxml')  # using beautiful soup with lxml parser for better performance
 
-        # scraping hyperlinks in webpage
+        #scraping hyperlinks in webpage
         potentialHyperLinks = soupObj.find_all('a')  # 'a' tag doesn't neccesarily mean hyperlink is present. must check for 'a tag with href attribute'
         for data in potentialHyperLinks:
-            if data.get("href") is None:  # some hyperlinks under a-tag don't have href attribute(url)
+            if data.get("href") == None: #some hyperlinks under a-tag don't have href attribute(url)
                 continue
 
-            # check if data is a relative URL
+
+            #check if data is a relative URL
             currentScrapedLink = data.get("href")
 
             # defragment split: splits current url into two, separated by the #. then takes the first half i.e. the half without the fragment
-            defragmentedUrl = currentScrapedLink.split("#")[0]  # TODO MIGHT BE ERROR IF CURRENTSCRAPEDLINK DOES NOT ALLOW SPLIT
+            defragmentedUrl = currentScrapedLink.split("#")[0] #TODO MIGHT BE ERROR IF CURRENTSCRAPEDLINK DOES NOT ALLOW SPLIT
 
-            # Source: https://www.webdevbydoing.com/absolute-relative-and-root-relative-file-paths/
-            if defragmentedUrl:  # link exists?
-                if not defragmentedUrl.startswith('http://') and not defragmentedUrl.startswith(
-                        'https://'):  # absolute URL Check
+            #Source: https://www.webdevbydoing.com/absolute-relative-and-root-relative-file-paths/
+            if defragmentedUrl: # link exists?
+                if not defragmentedUrl.startswith('http://') and not defragmentedUrl.startswith('https://'): #absolute URL Check
                     newAbsoluteLink = urljoin(url, defragmentedUrl)
                 else:
                     newAbsoluteLink = defragmentedUrl
-
-                # http://www.ics.uci.edu/alumni/stayconnected/index.php
-                parsedURL = urlparse(newAbsoluteLink)
-
-                # http://www.ics.uci.edu/alumni/stayconnected/stayconnected/index.php
-                
-                if parsedURL.path is not None:
-                    duplicate = False
-                    pathDict = {}
-                    urlPath = parsedURL.path.split('/')
-                    for path in urlPath:
-                        if path in pathDict:
-                            duplicate = True
-                            break
-                        else:
-                            pathDict[path] = 1
-
-                    if duplicate:  # don't add URL to hyperlink
-                        continue
 
                 # Duplicate Checking
                 if newAbsoluteLink in dict:  # TODO FIRST SEED URL MIGHT RUN INTO DUPLICATE
@@ -122,20 +124,53 @@ def extract_next_links(url, resp):
                 else:
                     dict[newAbsoluteLink] = 1
 
-                # textual check goes here
-                # indent correct?
-                # if less than 10 words and no links, not valuable
+                    # store in failsafe pickle
+                    with open("dict.pickle", "w") as f:
+                        pickle.dump(dict, f)
+
+        # textual check goes here
+        # indent correct?
+        # if less than 10 words and no links, not valuable
+
+
                 hyperlinks.append(newAbsoluteLink)
+
+
+
+            # Citation Above. Noticed finding all a-tags doesn't provide just hyperlinks, so learned and implemented going line by line to check for href attributes
+        #scraping all text in webpage for computation of number of words, common words, etc. TODO maybe just get all text from webpage
+        webPageTags = soupObj.find_all() # why not just write: for tag in soupObj.find_all() ?
+        for tag in webPageTags:
+            if tag in unwantedTags:
+                continue
+            stringWebPageContent += tag.text.strip()
+
+
+            tokensList = tokenizer(stringWebPageContent)
+            computeWordFrequencies(tokensList)
+
+            # TODO Keep track of size of whole page to be able to find largest
+            # num = countWordsOnPage(tokensList)
+            # if num < largeURL_Size:
+            #     num = largeURL_Size
+            #     # Put URL here
+
+            while None in hyperlinks:
+                hyperlinks.remove(None)
+
+            # return list(hyperlinks)
+            return hyperlinks
 
     except Exception as e:
         print("error in extract")
         print(e)
 
-    print(hyperlinks)
     return hyperlinks
 
 
 def is_valid(url):
+
+
     # Decide whether to crawl this url or not.
     # If you decide to crawl it, return True; otherwise return False.
     # There are already some conditions that return False.
@@ -147,6 +182,7 @@ def is_valid(url):
         # if not parsed.scheme or not parsed.netloc:
         #     absolute_url = urljoin(parent_url, url)
         #     parsed = urlparse(absolute_url)
+
 
         if parsed.scheme not in set(["http", "https"]):
             # print("failed at scheme")
@@ -171,20 +207,20 @@ def is_valid(url):
         #         # Mark the URL without the fragment as visited
         #         url.frontier.to_be_downloaded.add(url_without_fragment)
 
-        # if not parsed.path.startswith("/"):
+        #if not parsed.path.startswith("/"):
         #    return False
 
         # TRAP CHECKING
         # Check for common traps in the path
-        #TODO why is redirect here? shouldn't we be handling?
         path_traps = ["/calendar", "/ical", "/redirect", "/session", "/logout", "/search", "/user/", "/error",
-                      "/archive", "/sitemap", "/login", "/auth", "/404", "/~eppstein/pix/", "/community/news/view_news"]
+                "/archive", "/sitemap", "/login", "/auth", "/404", "/stayconnected", "/~eppstein/pix/",
+                      "/community/news/view_news", "/computing", "/policies"]
         for trap in path_traps:
             if trap in parsed.path:
                 print("Found trap:", trap)
                 return False
 
-        # TODO check traps for tags
+        #TODO check traps for tags
 
         # Check for common traps in the query
         query_traps = ["session=", "timestamp=", "ts=", ]
@@ -208,29 +244,39 @@ def is_valid(url):
             + r"|data|dat|exe|bz2|tar|msi|bin|7z|psd|dmg|iso"
             + r"|epub|dll|cnf|tgz|sha1"
             + r"|thmx|mso|arff|rtf|jar|csv"
-            + r"|rm|smil|wmv|swf|wma|zip|rar|gz|ods|mpg)$", parsed.path.lower())
+            + r"|rm|smil|wmv|swf|wma|zip|rar|gz|ods)$", parsed.path.lower())
 
     except TypeError:
         print("error in is_valid")
-        print("TypeError for ", parsed)
+        print ("TypeError for ", parsed)
+
 
     return False
 
 
-def tokenizer(text):  # derived from assignment 1
-    tokens = re.findall(r'[a-zA-Z0-9]+', text.lower())
+
+def tokenizer(text): #derived from assignment 1
+    tokens = re.findall(r'[a-zA-Z]+', text.lower()) # english letters only, numbers aren't important in finding words
     return tokens
 
+def countWordsOnPage(tokensList): #derived from assignment 1
+    num_tokens = len(tokensList)
+    return num_tokens
 
-def countWordsOnPage():  # derived from assignment 1
-    pass
-
-
-def computeWordFrequencies(tokensList):  # derived from assignment 1
-    token_count = defaultdict(int)
+def computeWordFrequencies(tokensList): #derived from assignment 1
     for token in tokensList:
-        token_count[token] += 1
+        if token not in listOfStopwords:
+            allTokens[token] += 1
 
-
-def countCommonTokens(urlList):  # derived from assignment 1
+def countCommonTokens(urlList): #derived from assignment 1
     pass
+
+def getCommonWords():
+    common_words = allTokens.most_common(50)
+    return common_words
+
+# prints words after crawling
+mostCommonWords = getCommonWords()
+print("Top 50 Most Common Words")
+for word, frequency in mostCommonWords:
+    print(f"{word}: {frequency}")
