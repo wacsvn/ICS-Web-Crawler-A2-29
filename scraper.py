@@ -259,26 +259,31 @@ def is_valid(url):
     return False
 
 
-
-def tokenizer(text): #derived from assignment 1
-    tokens = re.findall(r'[a-zA-Z]+', text.lower()) # english letters only, numbers aren't important in finding words
+def tokenizer(text):  # derived from assignment 1
+    tokens = re.findall(r'[a-zA-Z]+', text.lower())  # changed to words only, do we need to keep track of nums?
     return tokens
 
-def countWordsOnPage(tokensList): #derived from assignment 1
+
+def countWordsOnPage(tokensList):  # derived from assignment 1
     num_tokens = len(tokensList)
     return num_tokens
 
-def computeWordFrequencies(tokensList): #derived from assignment 1
+
+def computeWordFrequencies(tokensList):  # derived from assignment 1
     for token in tokensList:
         if token not in listOfStopwords:
             allTokens[token] += 1
 
-def countCommonTokens(urlList): #derived from assignment 1
+
+# idk what to do with this, do we need it anymore?
+def countCommonTokens(urlList):  # derived from assignment 1
     pass
+
 
 def getCommonWords():
     common_words = allTokens.most_common(50)
     return common_words
+
 
 # print url of the largest page
 print(f"The longest page was: {longestPage}")
