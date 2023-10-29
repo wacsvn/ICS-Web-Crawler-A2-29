@@ -13,15 +13,15 @@ try:
 except FileNotFoundError:
     dict = {}  # Initialize as an empty dictionary for crawled urls if the file doesn't exist # (key(url), value(list)
 
-# TEMPORARY: storage for every token found.
-# TODO: find better solution
 # Solution: use counter to store elements to allow us to use most.common(n) function to find most common words
 # Source: https://www.digitalocean.com/community/tutorials/python-counter-python-collections-counter#most-_common-n
 # Source 2: https://stackoverflow.com/questions/25558440/how-to-crawl-multiple-websites-to-find-common-words-beautifulsoup-requests-pyth
+# This might still not be the best solution to the "Storing Every Token" problem but counter is the best way to find common words
+
 allTokens = collections.Counter()
 
-largestSite = ""
-largestSite_Size = 0
+longestPage = ""
+longestPage_Size = 0
 
 
 listOfStopwords = [   #taken from https://www.ranks.nl/stopwords, which was provided in a2 instructions
@@ -149,11 +149,13 @@ def extract_next_links(url, resp):
             tokensList = tokenizer(stringWebPageContent)
             computeWordFrequencies(tokensList)
 
-            # TODO Keep track of size of whole page to be able to find largest
-            # num = countWordsOnPage(tokensList)
-            # if num < largeURL_Size:
-            #     num = largeURL_Size
-            #     # Put URL here
+            # function to find longest page
+            # add global keyword so that we can change these variables in this function
+            global longestPage, longestPage_Size
+            wordCount = countWordsOnPage(tokensList)
+            if wordCount > longestPage_Size:
+                 longestPage_Size = wordCount
+                 longestPage = url
 
             while None in hyperlinks:
                 hyperlinks.remove(None)
@@ -274,6 +276,10 @@ def countCommonTokens(urlList): #derived from assignment 1
 def getCommonWords():
     common_words = allTokens.most_common(50)
     return common_words
+
+# print url of the largest page
+print(f"The longest page was: {longestPage}")
+print(f"The word count for the longest page was: {longestPage_Size}")
 
 # prints words after crawling
 mostCommonWords = getCommonWords()
