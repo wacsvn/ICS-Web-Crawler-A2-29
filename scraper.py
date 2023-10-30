@@ -6,16 +6,17 @@ from urllib.parse import *
 from bs4 import BeautifulSoup
 
 # global variables
-dict = {}  # (key(url), value(list
-token_count = Counter()
+dict = {}  # (key(url), value(list))
+token_count = Counter()  # (key(token), value(int))
 longestPage = ""
 longestPage_Size = 0
 
-# Solution: use counter to store elements to allow us to use most.common(n) function to find most common words
+# Solution?: use counter to store elements to allow us to use most.common(n) function to find most common words
 # Source: https://www.digitalocean.com/community/tutorials/python-counter-python-collections-counter#most-_common-n
 # Source 2: https://stackoverflow.com/questions/25558440/how-to-crawl-multiple-websites-to-find-common-words-beautifulsoup-requests-pyth
 # This might still not be the best solution to the "Storing Every Token" problem
 # but counter is the best way to find common words
+# Gonna test this later, not fully ready i dont think
 
 listOfStopwords = [  # taken from https://www.ranks.nl/stopwords, which was provided in a2 instructions
     "a", "about", "above", "after", "again", "against", "all", "am", "an", "and",
