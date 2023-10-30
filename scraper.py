@@ -1,5 +1,5 @@
 import re
-import collections
+from collections import Counter
 from collections import defaultdict
 import lxml
 from urllib.parse import *
@@ -7,7 +7,7 @@ from bs4 import BeautifulSoup
 
 # global variables
 dict = {}  # (key(url), value(list
-token_count = collections.Counter()
+token_count = Counter()
 longestPage = ""
 longestPage_Size = 0
 
