@@ -4,12 +4,8 @@ import lxml
 from urllib.parse import *
 from bs4 import BeautifulSoup
 
-#global variables
-try:
-    with open("dict.pickle", "r") as f:
-        dict = pickle.load(f)
-except FileNotFoundError:
-    dict = {}  # Initialize as an empty dictionary if the file doesn't exist #(key(url), value(list)
+# global variables
+dict = {}  # (key(url), value(list
 listOfStopwords = [  # taken from https://www.ranks.nl/stopwords, which was provided in a2 instructions
     "a", "about", "above", "after", "again", "against", "all", "am", "an", "and",
     "any", "are", "aren't", "as", "at", "be", "because", "been", "before",
@@ -139,10 +135,6 @@ def extract_next_links(url, resp):
                 else:
                     dict[newAbsoluteLink] = 1
 
-                    # store in failsafe pickle
-                    with open("dict.pickle", "w") as f:
-                        pickle.dump(dict, f)
-
                 # textual check goes here
                 # indent correct?
                 # if less than 10 words and no links, not valuable
@@ -215,8 +207,9 @@ def is_valid(url):
         # TRAP CHECKING
         # Check for common traps in the path
         path_traps = ["/calendar", "/ical", "/logout", "/search", "/error", "/login", "/auth", "/404",
-                      "/~eppstein/pix/", "/community/news/view_news", "/doku.php", "/ml/datasets.php", "/~agelfand",
-                      "/~eppstein/pubs", "/honors", "/download.inc", "/~dechter/r"]
+                      "/~eppstein/pix/", "/~eppstein/pubs",
+                      "/community/news/view_news", "/doku.php", "/ml/datasets.php", "/~agelfand", "/honors",
+                      "/download.inc.php", "~dechter/r"]
         for trap in path_traps:
             if trap in parsed.path:
                 print("Found trap:", trap, " in: ", url)
@@ -225,7 +218,7 @@ def is_valid(url):
         # TODO check traps for tags
 
         # Check for common traps in the query
-        query_traps = ["timestamp=", "ts=", "session=", "next_uri=", "privacy_query", "share="]
+        query_traps = ["timestamp=", "ts=", "session=", "next_uri=", "privacy_mutation_token=", "share="]
         for trap in query_traps:
             if trap in parsed.query:
                 print("Found trap:", trap, " in: ", url)
@@ -246,7 +239,7 @@ def is_valid(url):
                 + r"|data|dat|exe|bz2|tar|msi|bin|7z|psd|dmg|iso"
                 + r"|epub|dll|cnf|tgz|sha1"
                 + r"|thmx|mso|arff|rtf|jar|csv"
-                + r"|rm|smil|wmv|swf|wma|zip|rar|gz|ods|mpg|img|war|apk|py|pps|ppsx)$", parsed.path.lower()):
+                + r"|rm|smil|wmv|swf|wma|zip|rar|gz|ods|mpg|img|war|apk|py|ppsx|pps)$", parsed.path.lower()):
             print("Found File Extension TRAP, ", url)
             return False
         else:
