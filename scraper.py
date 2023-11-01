@@ -206,7 +206,7 @@ def is_valid(url):
         # if not parsed.path.startswith("/"):
         #    return False
 
-        blacklist = ["swiki.ics.uci.edu", "physics.uci.edu", "eecs.uci.edu"]
+        blacklist = ["swiki.ics.uci.edu", "physics.uci.edu", "eecs.uci.edu", "economics.uci.edu", "linguistics.uci.edu"]
         for trap in blacklist:
             if parsed.hostname is None or parsed.hostname.endswith(trap):
                 print("BLACKLISTED WEBSITE: ", url)
@@ -215,7 +215,8 @@ def is_valid(url):
         # TRAP CHECKING
         # Check for common traps in the path
         path_traps = ["/calendar", "/ical", "/logout", "/search", "/error", "/login", "/auth", "/404",
-                      "/~eppstein/pix/", "/community/news/view_news", "/doku.php"]
+                      "/~eppstein/pix/", "/community/news/view_news", "/doku.php", "/ml/datasets.php", "/~agelfand",
+                      "/~eppstein/pubs", "/honors", "/download.inc", "/~dechter/r"]
         for trap in path_traps:
             if trap in parsed.path:
                 print("Found trap:", trap, " in: ", url)
@@ -224,7 +225,7 @@ def is_valid(url):
         # TODO check traps for tags
 
         # Check for common traps in the query
-        query_traps = ["timestamp=", "ts=", "session="]
+        query_traps = ["timestamp=", "ts=", "session=", "next_uri=", "privacy_query", "share="]
         for trap in query_traps:
             if trap in parsed.query:
                 print("Found trap:", trap, " in: ", url)
@@ -245,7 +246,7 @@ def is_valid(url):
                 + r"|data|dat|exe|bz2|tar|msi|bin|7z|psd|dmg|iso"
                 + r"|epub|dll|cnf|tgz|sha1"
                 + r"|thmx|mso|arff|rtf|jar|csv"
-                + r"|rm|smil|wmv|swf|wma|zip|rar|gz|ods|mpg|img|war|apk)$", parsed.path.lower()):
+                + r"|rm|smil|wmv|swf|wma|zip|rar|gz|ods|mpg|img|war|apk|py|pps|ppsx)$", parsed.path.lower()):
             print("Found File Extension TRAP, ", url)
             return False
         else:
