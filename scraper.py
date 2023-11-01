@@ -4,8 +4,13 @@ import lxml
 from urllib.parse import *
 from bs4 import BeautifulSoup
 
-# global variables
-dict = {}  # (key(url), value(list
+#global variables
+try:
+    with open("dict.pickle", "r") as f:
+        dict = pickle.load(f)
+except FileNotFoundError:
+    dict = {}  # Initialize as an empty dictionary if the file doesn't exist #(key(url), value(list)
+
 listOfStopwords = [  # taken from https://www.ranks.nl/stopwords, which was provided in a2 instructions
     "a", "about", "above", "after", "again", "against", "all", "am", "an", "and",
     "any", "are", "aren't", "as", "at", "be", "because", "been", "before",
@@ -134,6 +139,10 @@ def extract_next_links(url, resp):
                     continue
                 else:
                     dict[newAbsoluteLink] = 1
+
+                    # store in failsafe pickle
+                    with open("dict.pickle", "w") as f:
+                        pickle.dump(dict, f)
 
                 # textual check goes here
                 # indent correct?
