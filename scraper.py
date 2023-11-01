@@ -1,10 +1,21 @@
 import re
+from collections import Counter
+import pickle
 from collections import defaultdict
 import lxml
 from urllib.parse import *
 from bs4 import BeautifulSoup
 
 #global variables
+
+
+token_count = Counter()  # (key(token), value(int))
+
+# these need to be added to pickle later
+longestPage = ""
+longestPage_Size = 0
+wordDict = {}   # global dictionary storing every single word and its freq
+
 try:
     with open("dict.pickle", "r") as f:
         dict = pickle.load(f)
@@ -278,3 +289,25 @@ def computeWordFrequencies(tokensList):  # derived from assignment 1
 
 def countCommonTokens(urlList):  # derived from assignment 1
     pass
+
+def countUniquePages():
+    return len(dict)
+
+def getLongestPage():
+    longest = 0
+    for key, value in dict:
+        if value > longest:
+            longest = value
+            longestPage = key
+    return longestPage
+
+def countSubdomains():
+    pass
+
+def printReportInfo():
+    println("Unique Pages: ", countUniquePages(), "\n",
+            "Longest Page: ", getLongestPage(), "\n",
+            "50 Most Common Words: ", countCommonTokens(urlList), "\n",
+            "Subdomain Frequency: ", countSubdomains(), "\n")
+
+
