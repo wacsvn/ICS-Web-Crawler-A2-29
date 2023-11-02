@@ -152,7 +152,7 @@ def extract_next_links(url, resp):
                 if newAbsoluteLink in dict:
                     continue
                 else:
-                    listOfWords = tokenizer(soupObj.get_text()) # fixme does this actually get all the words in a page?
+                    listOfWords = tokenizer(soupObj.get_text("")) # fixme does this actually get all the words in a page?
                     wordCount = len(listOfWords)
 
                     # finally store the unique url with its word length as the value
@@ -283,8 +283,8 @@ def tokenizer(text):  # derived from assignment 1
     return tokens
 
 
-def countWordsOnPage():  # derived from assignment 1
-    pass
+# def countWordsOnPage():  # derived from assignment 1
+#     pass
 
 
 def computeWordFrequencies(tokensList):  # derived from assignment 1
