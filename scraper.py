@@ -11,14 +11,18 @@ from bs4 import BeautifulSoup
 token_count = Counter()  # (key(token), value(int))
 
 # these need to be added to pickle later
+subdomains = {}
 longestPage = ""
 longestPage_Size = 0
 wordDict = {}   # global dictionary storing every single word and its freq
 
+# initialize dict in case not existent
+dict = {}
 try:
-    with open("dict.pickle", "rb") as f:
+    with open("report.pickle", "rb") as f:
         data = f.read()
         if data:
+            # populate dict with previously garnered data
             dict = pickle.loads(data)
         else:
             dict = {}  # Initialize as an empty dictionary if the file is empty
@@ -213,6 +217,8 @@ def extract_next_links(url, resp):
                 # Duplicate Checking
                 if newAbsoluteLink in dict:
                     continue
+
+                # at this point the link is surely valid and unique
                 else:
                     listOfWords = tokenizer(soupObj.get_text("")) # fixme does this actually get all the words in a page?
                     wordCount = len(listOfWords)
@@ -221,7 +227,7 @@ def extract_next_links(url, resp):
                     dict[newAbsoluteLink] = wordCount
 
                     # store dict in failsafe pickle
-                    with open("dict.pickle", "wb") as f:
+                    with open("report.pickle", "wb") as f:
                         pickle.dump(dict, f)
 
                 # textual check
@@ -264,6 +270,24 @@ def is_valid(url):
         for domain in allowed_domains:
             if parsed.hostname is not None and parsed.hostname.endswith(domain):
                 tempFlag = True
+
+                ### EXTRACT SUBDOMAIN INFO ###
+
+                subdomain = parsed.hostname.split('.')[0]  # Extract the FIRST part of the hostname which should be
+                # either one of the seeds, or a novel subdomain
+
+
+                seedDomain = parsed.hostname.split('.')[1]  # Extract the SECOND part of the hostname, hopefully ics
+
+                if seedDomain == "ics": # if in ics, check if new subdomain or already known subdomain
+
+                    if subdomain in subdomains:  # if novel subdomain but not the first, then increment
+                        subdomains[subdomain] += 1
+                    else:  # if first novel subdomain, then add new key to the subdomains dictionary
+                        subdomains[subdomain] = 1
+
+                ### END EXTRACT SUBDOMAIN INFO ###
+
                 break
 
         if tempFlag == False:
@@ -355,10 +379,12 @@ def computeWordFrequencies(tokensList):  # derived from assignment 1
         token_count[token] += 1
 
 
+# most common 50 words
 def countCommonTokens(urlList):  # derived from assignment 1
     pass
 
 def countUniquePages():
+    print(f"Amount of unique webpages: {len(dict)}")
     return len(dict)
 
 def getLongestPage():
@@ -367,15 +393,21 @@ def getLongestPage():
         if value > longest:
             longest = value
             longestPage = key
+    print(f"Longest Page: {longestPage}")
     return longestPage
 
 def countSubdomains():
-    pass
+    for subdomain, count in subdomains.items():
+        print(f"Subdomain: {subdomain}, Count: {count}")
+    return len(subdomains)
 
-def printReportInfo():
-    print("Unique Pages: ", countUniquePages(), "\n",
-            "Longest Page: ", getLongestPage(), "\n",
-            "50 Most Common Words: ", countCommonTokens(), "\n",
-            "Subdomain Frequency: ", countSubdomains(), "\n")
+# potential universal print for all report methods. or alternatively can just have each method print by themselves at
+# the end of the crawl
+
+# def printReportInfo():
+#     print("Unique Pages: ", countUniquePages(), "\n",
+#             "Longest Page: ", getLongestPage(), "\n",
+#             "50 Most Common Words: ", countCommonTokens(), "\n",
+#             "Subdomain Frequency: ", countSubdomains(), "\n")
 
 
