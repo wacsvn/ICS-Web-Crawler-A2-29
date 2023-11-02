@@ -397,7 +397,11 @@ def getLongestPage():
     return longestPage
 
 def countSubdomains():
-    for subdomain, count in subdomains.items():
+
+    # Sort the subdomains alphabetically
+    sorted_subdomains = sorted(subdomains.items(), key=lambda x: x[0])
+
+    for subdomain, count in sorted_subdomains:
         print(f"Subdomain: {subdomain}, Count: {count}")
     return len(subdomains)
 
