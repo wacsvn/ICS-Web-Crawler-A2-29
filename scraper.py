@@ -8,7 +8,6 @@ from bs4 import BeautifulSoup
 
 #global variables
 
-
 token_count = Counter()  # (key(token), value(int))
 
 # these need to be added to pickle later
@@ -17,8 +16,12 @@ longestPage_Size = 0
 wordDict = {}   # global dictionary storing every single word and its freq
 
 try:
-    with open("dict.pickle", "r") as f:
-        dict = pickle.load(f)
+    with open("dict.pickle", "rb") as f:
+        data = f.read()
+        if data:
+            dict = pickle.loads(data)
+        else:
+            dict = {}  # Initialize as an empty dictionary if the file is empty
 except FileNotFoundError:
     dict = {}  # Initialize as an empty dictionary if the file doesn't exist #(key(url), value(list)
 
@@ -146,17 +149,20 @@ def extract_next_links(url, resp):
                         continue
 
                 # Duplicate Checking
-                if newAbsoluteLink in dict:  # TODO FIRST SEED URL MIGHT RUN INTO DUPLICATE
+                if newAbsoluteLink in dict:
                     continue
                 else:
-                    dict[newAbsoluteLink] = 1
+                    listOfWords = tokenizer(soupObj.get_text()) # fixme does this actually get all the words in a page?
+                    wordCount = len(listOfWords)
 
-                    # store in failsafe pickle
-                    with open("dict.pickle", "w") as f:
+                    # finally store the unique url with its word length as the value
+                    dict[newAbsoluteLink] = wordCount
+
+                    # store dict in failsafe pickle
+                    with open("dict.pickle", "wb") as f:
                         pickle.dump(dict, f)
 
-                # textual check goes here
-                # indent correct?
+                # textual check
                 # if less than 10 words and no links, not valuable
                 hyperlinks.append(newAbsoluteLink)
 
@@ -295,7 +301,7 @@ def countUniquePages():
 
 def getLongestPage():
     longest = 0
-    for key, value in dict:
+    for key, value in dict.items():
         if value > longest:
             longest = value
             longestPage = key
@@ -305,9 +311,9 @@ def countSubdomains():
     pass
 
 def printReportInfo():
-    println("Unique Pages: ", countUniquePages(), "\n",
+    print("Unique Pages: ", countUniquePages(), "\n",
             "Longest Page: ", getLongestPage(), "\n",
-            "50 Most Common Words: ", countCommonTokens(urlList), "\n",
+            "50 Most Common Words: ", countCommonTokens(), "\n",
             "Subdomain Frequency: ", countSubdomains(), "\n")
 
 
